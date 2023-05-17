@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from dotenv import load_dotenv
 from os import environ
+from marshmallow import post_load, fields, ValidationError
 
 load_dotenv()
 
@@ -54,11 +55,74 @@ class Instructor(db.Model):
 
 
 # Schemas
+class StudentSchema(ma.Schema):
+    id = fields.Integer(primary_key = True)
+    first_name = fields.String(required = True)
+    last_name = fields.String(required = True)
+    year = fields.Integer()
+    gpa = fields.Float()
 
+    @post_load
+    def create(self, data, **kwargs):
+        return Student(**data)
+    
+    class Meta:
+        fields = ("id","first_name","last_name","year","gpa")
+
+class StudentNameSchema(ma.Schema):
+    first_name = fields.String(required = True)
+    last_name = fields.String(required = True)
+
+    @post_load
+    def create(self, data, **kwargs):
+        return Student(**data)
+    
+    class Meta:
+        fields = ("first_name","last_name")
+
+class InstructorSchema(ma.Schema):
+    class Meta:
+        fields = ("id","first_name","last_name","hire_date")
+
+class FullCourseDetailSchema(ma.Schema):
+    instructor = ma.Nested(InstructorSchema, many=False)
+    student = ma.Nested(StudentSchema, many=True)
+    class Meta:
+        fields=("id","name","instructor_id","credits","instructor","students")
+
+
+student_schema = StudentSchema()
+students_schema = StudentSchema(many = True)
+student_name_schema = StudentNameSchema(many=True)
+full_course_detail_schema = FullCourseDetailSchema(many=True)
+instructor_schema = InstructorSchema(many=True)
 
 # Resources
+class StudentListResource(Resource):
+    def get(self):
+        order = request.args.get('order')
+
+        query = Student.query
+        if order:
+            query = query.order_by(order)
+
+        students = query.all()
+        return students_schema.dump(students)
+
+    
+class FullCourseDetailResource(Resource):
+    def get(self):
+        custom_response = {}
+
+        course_details = Course.query.all()
+
+        for item in course_details:
+            instructor = Instructor.query.filter(Instructor.)
+
+
 
 
 # Routes
-
+api.add_resource(StudentListResource,'/api/students')
+api.add_resource(FullCourseDetailResource,'api/course_details')
 
