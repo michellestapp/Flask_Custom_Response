@@ -80,22 +80,22 @@ class StudentNameSchema(ma.Schema):
     class Meta:
         fields = ("first_name","last_name")
 
-class InstructorSchema(ma.Schema):
-    class Meta:
-        fields = ("id","first_name","last_name","hire_date")
+# class InstructorSchema(ma.Schema):
+#     class Meta:
+#         fields = ("id","first_name","last_name","hire_date")
 
-class FullCourseDetailSchema(ma.Schema):
-    instructor = ma.Nested(InstructorSchema, many=False)
-    student = ma.Nested(StudentSchema, many=True)
-    class Meta:
-        fields=("id","name","instructor_id","credits","instructor","students")
+# class FullCourseDetailSchema(ma.Schema):
+#     instructor = ma.Nested(InstructorSchema, many=False)
+#     student = ma.Nested(StudentSchema, many=True)
+#     class Meta:
+#         fields=("id","name","instructor_id","credits","instructor","students")
 
 
 student_schema = StudentSchema()
 students_schema = StudentSchema(many = True)
 student_name_schema = StudentNameSchema(many=True)
-full_course_detail_schema = FullCourseDetailSchema(many=True)
-instructor_schema = InstructorSchema(many=True)
+# full_course_detail_schema = FullCourseDetailSchema(many=True)
+# instructor_schema = InstructorSchema(many=True)
 
 # Resources
 class StudentListResource(Resource):
@@ -111,18 +111,28 @@ class StudentListResource(Resource):
 
     
 class FullCourseDetailResource(Resource):
-    def get(self):
+    def get(self,course_id):
         custom_response = {}
 
-        course_details = Course.query.all()
-
-        for item in course_details:
-            instructor = Instructor.query.filter(Instructor.)
+        course_details = Course.query.get_or_404(course_id)
 
 
+        # for item in course_details:
+        #     course = Course.query.get_or_404(course_id)
+        instructor = Instructor.query.get_or_404(course_details.instructor_id)
+ #       students = Student.query.get_or_404(course_details.students)
+
+        custom_response = {
+                "course_name": course_details.name,
+                "instructor": f'{instructor.first_name} {instructor.last_name}',
+                "number_of_students": len(course_details.students),
+                "students": student_name_schema.dump(course_details.students)
+            }
+
+        return custom_response, 200
 
 
 # Routes
 api.add_resource(StudentListResource,'/api/students')
-api.add_resource(FullCourseDetailResource,'api/course_details')
+api.add_resource(FullCourseDetailResource,'/api/course_details/<int:course_id>')
 
